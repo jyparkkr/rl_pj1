@@ -8,8 +8,14 @@ import gym
 from gym import logger
 # pybullet_envs must be imported in order to create Walker2DBulletEnv
 import pybullet_envs    # noqa: F401  # pylint: disable=unused-import
+import numpy as np
+import torch
+import argparse
+import os
+import time
+import pybullet
 
-from ee619.agent import Agent
+from ee619.agent import TD3
 
 
 def parse_args() -> Namespace:
@@ -27,7 +33,7 @@ def parse_args() -> Namespace:
     return parser.parse_args()
 
 
-def evaluate(agent: Agent, label: Optional[str], repeat: int, seed: int):
+def evaluate(env, agent: TD3, label: Optional[str], repeat: int, seed: int):
     """Computes the mean episodic return of the agent.
 
     Args:
@@ -39,8 +45,8 @@ def evaluate(agent: Agent, label: Optional[str], repeat: int, seed: int):
         seed: Passed to the environment for determinism.
     """
     logger.set_level(logger.DISABLED)
-    env = gym.make('Walker2DBulletEnv-v0')
-    agent.load()
+    #env = gym.make('Walker2DBulletEnv-v0')
+    #agent.load('dir_Walker2D_002', 'chpnt_ts2500')
     rewards: List[float] = []
     for seed_ in range(seed, seed + repeat):
         env.seed(seed_)
@@ -62,4 +68,21 @@ def evaluate(agent: Agent, label: Optional[str], repeat: int, seed: int):
 
 
 if __name__ == '__main__':
-    evaluate(agent=Agent(), **vars(parse_args()))
+    env = gym.make('Walker2DBulletEnv-v0')
+
+    # Set seeds
+    seed = 12345
+    env.seed(seed)
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+
+    state_size = env.observation_space.shape[0]
+    action_size=env.action_space.shape[0]
+    action_high= float(env.action_space.high[0])
+    print('state_size: ', state_size, ', action_size: ', action_size, ', action_high: ', action_high)
+
+    agent = TD3(state_dim=state_size, action_dim=action_size, max_action=action_high)
+    
+    agent.load('dir_Walker2D_002', 'chpnt_ts2500')
+    
+    evaluate(env, agent, None, repeat=5, seed=12345)
