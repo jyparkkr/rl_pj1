@@ -116,7 +116,7 @@ def twin_ddd_train(n_episodes=100000, save_every=10, print_env=10):
            timestep_after_last_save %= save_every            
            agent.save('chpnt_interm', 'dir_Walker2D_002')  
         
-        if len(scores_deque) == 100 and avg_score >= threshold:
+        if len(scores_array) == 100 and avg_score >= threshold:
            print('Environment solved with Average Score: ',  avg_score )
            break 
             
