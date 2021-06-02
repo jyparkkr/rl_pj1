@@ -31,13 +31,14 @@ state_dim = env.observation_space.shape[0]
 action_dim = env.action_space.shape[0] 
 max_action = float(env.action_space.high[0])
 threshold = env.spec.reward_threshold
+threshold = 4000
 
 print('start_dim: ', state_dim, ', action_dim: ', action_dim)
 print('max_action: ', max_action, ', threshold: ', threshold, ', std_noise: ', std_noise)
 
 agent = TD3(state_dim, action_dim, max_action)
 
-def twin_ddd_train(n_episodes=2000, save_every=10, print_env=10):
+def twin_ddd_train(n_episodes=100000, save_every=10, print_env=10):
 
     #scores_deque = deque(maxlen=100)
     scores_array = []
@@ -110,14 +111,14 @@ def twin_ddd_train(n_episodes=2000, save_every=10, print_env=10):
         agent.train(replay_buf, timestep)
 
         # Save episode if more than save_every=5000 timesteps
-        #if timestep_after_last_save >= save_every and i_episode > 0:
+        if timestep_after_last_save >= save_every and i_episode > 0:
 
-        #    timestep_after_last_save %= save_every            
-        #    agent.save('chpnt_interm', 'dir_Walker2D_002')  
+           timestep_after_last_save %= save_every            
+           agent.save('chpnt_interm', 'dir_Walker2D_002')  
         
-        #if len(scores_deque) == 100 and avg_score >= threshold:
-        #    print('Environment solved with Average Score: ',  avg_score )
-        #    break 
+        if len(scores_deque) == 100 and avg_score >= threshold:
+           print('Environment solved with Average Score: ',  avg_score )
+           break 
             
     agent.save('chpnt_ts2500', 'dir_Walker2D_002')  
 
