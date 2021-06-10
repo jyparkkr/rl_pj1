@@ -25,8 +25,8 @@ def save(agent, episode, reward):
         reward: Reward on current training step.
     """
 
-    policy = join(ROOT, 'saved_model', f'weights_policy_{episode:05}_{reward:5.2f}.pth')
-    critic = join(ROOT, 'saved_model', f'weights_critic_{episode:05}_{reward:5.2f}.pth')
+    policy = join(ROOT, 'saved_model', f'weights_policy_ep_{episode:05}_rw_{reward:5.2f}.pth')
+    critic = join(ROOT, 'saved_model', f'weights_critic_ep_{episode:05}_rw_{reward:5.2f}.pth')
     if episode == 'final':
         policy = join(ROOT, 'saved_model', 'weights_policy_final.pth')
         critic = join(ROOT, 'saved_model', 'weights_critic_final.pth')
