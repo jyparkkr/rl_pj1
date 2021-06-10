@@ -69,25 +69,24 @@ class soft_actor_critic_agent(object):
         # Two Q-functions to mitigate positive bias in the policy improvement step
         qf1, qf2 = self.critic(state_batch, action_batch) 
         qf1_loss = F.mse_loss(qf1, next_q_value) 
-        qf2_loss = F.mse_loss(qf2, next_q_value) 
-  
-        pi, log_pi, _ = self.policy.sample(state_batch)
 
-        qf1_pi, qf2_pi = self.critic(state_batch, pi)
-        min_qf_pi = torch.min(qf1_pi, qf2_pi)
-
-        policy_loss = ((self.alpha * log_pi) - min_qf_pi).mean() 
         
         self.critic_optim.zero_grad()
         qf1_loss.backward()
         self.critic_optim.step()
 
+        qf1, qf2 = self.critic(state_batch, action_batch) 
+        qf2_loss = F.mse_loss(qf2, next_q_value) 
         self.critic_optim.zero_grad()
         qf2_loss.backward()
         self.critic_optim.step()
         
+        pi, log_pi, _ = self.policy.sample(state_batch)
+        qf1_pi, qf2_pi = self.critic(state_batch, pi)
+        min_qf_pi = torch.min(qf1_pi, qf2_pi)
+        policy_loss = torch.mean((self.alpha * log_pi) - min_qf_pi) 
         self.policy_optim.zero_grad()
-        policy_loss.backward()
+        policy_loss.backward() #error here - 앞에서 이미 계산한 qf1, qf2도 있는 policy에서 backward해서 error 발생하는듯 함.
         self.policy_optim.step()
 
         alpha_loss = -(self.log_alpha * (log_pi + self.target_entropy).detach()).mean()
