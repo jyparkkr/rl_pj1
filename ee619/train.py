@@ -104,6 +104,8 @@ def train(env, agent: Agent, max_episodes: int, threshold: int, max_steps: int, 
         if i_episode % 100 == 0 and i_episode > 0:
             reward_round = round(episode_reward, 2)
             save(agent, i_episode, reward_round)
+            print('Save environment in episode:  ', i_episode)
+
 
         s =  (int)(time.time() - time_start)
             
