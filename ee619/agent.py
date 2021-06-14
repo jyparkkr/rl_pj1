@@ -33,7 +33,7 @@ class Agent:
         self.gamma = gamma
         self.tau = tau
         self.alpha = alpha
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 
         self.critic = QNetwork(self.seed, self.num_inputs, self.action_space.shape[0], hidden_size).to(device=self.device)
         self.critic_optim = Adam(self.critic.parameters(), lr=lr)
