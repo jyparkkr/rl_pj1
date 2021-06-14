@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 import pickle
 
 
+
 ROOT = dirname(abspath(realpath(__file__)))  # path to the ee619 directory
 
 
@@ -79,6 +80,10 @@ def train(env, agent: Agent, max_episodes: int, threshold: int, max_steps: int, 
     scores_array = []
     avg_scores_array = [] 
     std_scores_array = []
+    q1_loss_array = []
+    q2_loss_array = []
+    policy_loss_array = []
+    alpha_loss_array = []
 
     batch_size=256 ## Training batch size
     start_steps=10000 ## Steps sampling random actions
@@ -91,6 +96,12 @@ def train(env, agent: Agent, max_episodes: int, threshold: int, max_steps: int, 
         episode_reward = 0
         episode_steps = 0
         done = False
+
+        episode_qf1_loss = 0
+        episode_qf2_loss = 0
+        episode_policy_loss = 0
+        episode_alpha_loss = 0
+
         state = env.reset()
 
         for step in range(max_steps):    
@@ -101,7 +112,12 @@ def train(env, agent: Agent, max_episodes: int, threshold: int, max_steps: int, 
 
             if len(memory) > batch_size:                
                 # Update parameters of all the networks
-                agent.update_parameters(memory, batch_size, updates)
+                qf1_loss, qf2_loss, policy_loss, alpha_loss = agent.update_parameters(memory, batch_size, updates)
+
+                episode_qf1_loss += qf1_loss
+                episode_qf2_loss += qf2_loss
+                episode_policy_loss += policy_loss
+                episode_alpha_loss += alpha_loss
 
                 updates += 1
 
@@ -118,6 +134,8 @@ def train(env, agent: Agent, max_episodes: int, threshold: int, max_steps: int, 
             
             if done:
                 break
+
+        print(qf1_loss, qf2_loss, policy_loss, alpha_loss)
 
         scores_deque.append(episode_reward)
         scores_array.append(episode_reward)        
