@@ -116,8 +116,8 @@ def train(env, agent: Agent, max_episodes: int, threshold: int, max_steps: int, 
                     
         if (avg_score > threshold):
             print('Solved environment with Avg Score:  ', avg_score)
-            save(agent, 'final')
-            break;
+            save(agent, 'final', avg_score)
+            break
             
     return scores_array, avg_scores_array 
 
