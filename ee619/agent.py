@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from torch.optim import Adam
-from ee619.model import GaussianPolicy, QNetwork
+from model import GaussianPolicy, QNetwork
 
 
 ROOT = dirname(abspath(realpath(__file__)))  # path to the ee619 directory
@@ -114,7 +114,9 @@ class Agent:
         self.alpha = self.log_alpha.exp()
         alpha_tlogs = self.alpha.clone() # For TensorboardX logs
         
-        soft_update(self.critic_target, self.critic, self.tau)    
+        soft_update(self.critic_target, self.critic, self.tau)
+
+        return qf1_loss.item(), qf2_loss.item(), policy_loss.item(), alpha_loss.item()   
 
 
     def load(self):

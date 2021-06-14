@@ -9,8 +9,8 @@ from gym import logger
 import pybullet_envs    # noqa: F401  # pylint: disable=unused-import
 import numpy as np
 import torch
-from ee619.agent import Agent
-from ee619.replay_memory import ReplayMemory
+from agent import Agent
+from replay_memory import ReplayMemory
 
 
 ROOT = dirname(abspath(realpath(__file__)))  # path to the ee619 directory
@@ -55,6 +55,10 @@ def train(env, agent: Agent, max_episodes: int, threshold: int, max_steps: int, 
     scores_deque = deque(maxlen=100)
     scores_array = []
     avg_scores_array = [] 
+    q1_loss_array = []
+    q2_loss_array = []
+    policy_loss_array = []
+    alpha_loss_array = []
 
     batch_size=256 ## Training batch size
     start_steps=10000 ## Steps sampling random actions
@@ -67,6 +71,12 @@ def train(env, agent: Agent, max_episodes: int, threshold: int, max_steps: int, 
         episode_reward = 0
         episode_steps = 0
         done = False
+
+        episode_qf1_loss = 0
+        episode_qf2_loss = 0
+        episode_policy_loss = 0
+        episode_alpha_loss = 0
+
         state = env.reset()
 
         for step in range(max_steps):    
@@ -77,7 +87,12 @@ def train(env, agent: Agent, max_episodes: int, threshold: int, max_steps: int, 
 
             if len(memory) > batch_size:                
                 # Update parameters of all the networks
-                agent.update_parameters(memory, batch_size, updates)
+                qf1_loss, qf2_loss, policy_loss, alpha_loss = agent.update_parameters(memory, batch_size, updates)
+
+                episode_qf1_loss += qf1_loss
+                episode_qf2_loss += qf2_loss
+                episode_policy_loss += policy_loss
+                episode_alpha_loss += alpha_loss
 
                 updates += 1
 
@@ -94,6 +109,8 @@ def train(env, agent: Agent, max_episodes: int, threshold: int, max_steps: int, 
             
             if done:
                 break
+
+        print(qf1_loss, qf2_loss, policy_loss, alpha_loss)
 
         scores_deque.append(episode_reward)
         scores_array.append(episode_reward)        
@@ -136,4 +153,4 @@ if __name__ == '__main__':
     env.seed(seed)
     max_steps = env._max_episode_steps # 1000
 
-    train(env=env, agent=Agent(), max_episodes=20000, threshold=2500, max_steps=max_steps, seed=seed)
+    scores_array, avg_scores_array = train(env=env, agent=Agent(), max_episodes=20000, threshold=2500, max_steps=max_steps, seed=seed)
