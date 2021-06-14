@@ -9,8 +9,11 @@ from gym import logger
 import pybullet_envs    # noqa: F401  # pylint: disable=unused-import
 import numpy as np
 import torch
-from agent import Agent
-from replay_memory import ReplayMemory
+from ee619.agent import Agent
+from ee619.replay_memory import ReplayMemory
+import matplotlib.pyplot as plt
+import pickle
+
 
 
 ROOT = dirname(abspath(realpath(__file__)))  # path to the ee619 directory
@@ -35,6 +38,28 @@ def save(agent, episode, reward):
     torch.save(agent.critic.state_dict(), critic)
 
 
+def save_score_plot(scores, avg_scores, std_scores, name):
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    plt.plot(np.arange(1, len(scores)+1), scores, label="Score")
+    plt.plot(np.arange(1, len(avg_scores)+1), avg_scores, label="Avg on 100 episodes")
+    plt.fill_between(
+        np.arange(1, len(avg_scores)+1), 
+        avg_scores - std_scores, 
+        avg_scores + std_scores, 
+        color='gray', 
+        alpha=0.2
+    )
+
+    plt.legend() 
+    plt.ylabel('Score')
+    plt.xlabel('Episodes #')
+    if name is not None:
+        path = join(ROOT, 'train_result', 'score_' + str(avg_scores[-1])[:7]+'.png')
+        plt.savefig(path)
+    plt.clf()
+
+
 def train(env, agent: Agent, max_episodes: int, threshold: int, max_steps: int, seed: int):
     """Computes the mean episodic return of the agent.
 
@@ -48,13 +73,13 @@ def train(env, agent: Agent, max_episodes: int, threshold: int, max_steps: int, 
     logger.set_level(logger.DISABLED)
     total_numsteps = 0
     updates = 0
-    num_episodes = 20000
     updates=0
 
     time_start = time.time()
     scores_deque = deque(maxlen=100)
     scores_array = []
     avg_scores_array = [] 
+    std_scores_array = []
     q1_loss_array = []
     q2_loss_array = []
     policy_loss_array = []
@@ -67,7 +92,7 @@ def train(env, agent: Agent, max_episodes: int, threshold: int, max_steps: int, 
 
 
     
-    for i_episode in range(num_episodes): 
+    for i_episode in range(max_episodes): 
         episode_reward = 0
         episode_steps = 0
         done = False
@@ -115,7 +140,9 @@ def train(env, agent: Agent, max_episodes: int, threshold: int, max_steps: int, 
         scores_deque.append(episode_reward)
         scores_array.append(episode_reward)        
         avg_score = np.mean(scores_deque)
+        std_score = np.std(scores_deque)
         avg_scores_array.append(avg_score)
+        std_scores_array.append(std_score)
         max_score = np.max(scores_deque)
         
         if i_episode % 100 == 0 and i_episode > 0:
@@ -136,7 +163,7 @@ def train(env, agent: Agent, max_episodes: int, threshold: int, max_steps: int, 
             save(agent, 'final', avg_score)
             break
             
-    return scores_array, avg_scores_array 
+    return np.array(scores_array), np.array(avg_scores_array), np.array(std_scores_array)
 
 
 if __name__ == '__main__':
@@ -153,4 +180,20 @@ if __name__ == '__main__':
     env.seed(seed)
     max_steps = env._max_episode_steps # 1000
 
-    scores_array, avg_scores_array = train(env=env, agent=Agent(), max_episodes=20000, threshold=2500, max_steps=max_steps, seed=seed)
+    scores_array, avg_scores_array, std_scores_array = train(
+        env=env, agent=Agent(), max_episodes=30, threshold=800, max_steps=max_steps, seed=seed)
+
+    save_score_plot(scores_array, avg_scores_array, std_scores_array, "final_score")
+
+    with open(join(ROOT, 'train_result', 'scores_array.pkl'), 'wb') as f1:
+        pickle.dump(scores_array, f1)
+
+    with open(join(ROOT, 'train_result', 'avg_scores_array.pkl'), 'wb') as f2:
+        pickle.dump(avg_scores_array, f2)
+
+    # ## load
+    # with open(join(ROOT, 'train_result', 'scores_array.pkl'), 'rb') as f1:
+    #     scores_array = pickle.load(f1)
+    # 
+    # with open(join(ROOT, 'train_result', 'avg_scores_array.pkl'), 'rb') as f2:
+    #     avg_scores_array = pickle.load(f2)
