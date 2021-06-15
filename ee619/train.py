@@ -38,9 +38,10 @@ def save(agent, episode, reward):
     torch.save(agent.critic.state_dict(), critic)
 
 
-def save_score_plot(scores, avg_scores, std_scores, name):
+def save_score_plot(scores, avg_scores, std_scores, score):
     fig = plt.figure()
     ax = fig.add_subplot(111)
+    ax.set_xlim(left = 0, right = len(scores))
     plt.plot(np.arange(1, len(scores)+1), scores, label="Score")
     plt.plot(np.arange(1, len(avg_scores)+1), avg_scores, label="Avg on 100 episodes")
     plt.fill_between(
@@ -54,27 +55,28 @@ def save_score_plot(scores, avg_scores, std_scores, name):
     plt.legend() 
     plt.ylabel('Score')
     plt.xlabel('Episodes #')
-    if name is not None:
-        path = join(ROOT, 'train_result', 'score_' + str(avg_scores[-1])[:7]+'.png')
+    if score is not None:
+        path = join(ROOT, 'train_result', score + '_score' + '.png')
         plt.savefig(path)
 
     plt.clf()
 
 
-def save_loss_plot(losses, name):
+def save_loss_plot(start_ep, losses, name, score):
     #import matplotlib.pyplot as plt
 
     #print('length of losses: ', len(losses))
 
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    plt.plot(np.arange(1, len(losses)+1), losses, label= name)
-    #plt.plot(np.arange(1, len(avg_scores)+1), avg_scores, label="Avg on 100 episodes")
-    plt.legend(bbox_to_anchor=(1.05, 1)) 
+    ax.set_xlim(left = 0, right = start_ep + len(losses))
+
+    plt.plot(np.arange(start_ep, start_ep + len(losses)), losses, label= name)
+    # plt.legend(bbox_to_anchor=(1.05, 1)) 
     plt.ylabel('Loss')
     plt.xlabel('Episodes #')
     
-    path = join(ROOT, 'train_result', name + '.png')
+    path = join(ROOT, 'train_result', score + '_' +name + '.png')
     plt.savefig(path)
 
     plt.clf()
@@ -93,7 +95,7 @@ def train(env, agent: Agent, max_episodes: int, threshold: int, max_steps: int, 
     logger.set_level(logger.DISABLED)
     total_numsteps = 0
     updates = 0
-    updates=0
+    loss_start_ep = 0
 
     time_start = time.time()
     scores_deque = deque(maxlen=100)
@@ -158,17 +160,14 @@ def train(env, agent: Agent, max_episodes: int, threshold: int, max_steps: int, 
 
         #print("loss:", qf1_loss, qf2_loss, policy_loss, alpha_loss)
 
-        if qf1_loss != 0:
+        if updates > 0:
             qf1_loss_array.append(qf1_loss)
-
-        if qf2_loss != 0:
             qf2_loss_array.append(qf2_loss)
-
-        if policy_loss != 0:
             policy_loss_array.append(policy_loss)
-
-        if alpha_loss != 0:
             alpha_loss_array.append(alpha_loss)
+
+        else:
+            loss_start_ep += 1
 
         scores_deque.append(episode_reward)
         scores_array.append(episode_reward)        
@@ -197,7 +196,7 @@ def train(env, agent: Agent, max_episodes: int, threshold: int, max_steps: int, 
             break
             
     return np.array(scores_array), np.array(avg_scores_array), np.array(std_scores_array), \
-        np.array(qf1_loss_array), np.array(qf2_loss_array), np.array(policy_loss_array), np.array(alpha_loss_array)
+        np.array(qf1_loss_array), np.array(qf2_loss_array), np.array(policy_loss_array), np.array(alpha_loss_array), loss_start_ep
 
 
 if __name__ == '__main__':
@@ -214,30 +213,42 @@ if __name__ == '__main__':
     env.seed(seed)
     max_steps = env._max_episode_steps # 1000
 
-    scores_array, avg_scores_array, std_scores_array, qf1_loss_array, qf2_loss_array, policy_loss_array, alpha_loss_array = train(
-        env=env, agent=Agent(), max_episodes=1000, threshold=2500, max_steps=max_steps, seed=seed)
+    scores_array, avg_scores_array, std_scores_array, qf1_loss_array, qf2_loss_array, policy_loss_array, alpha_loss_array, loss_start_ep = train(
+        env=env, agent=Agent(), max_episodes=50, threshold=2500, max_steps=max_steps, seed=seed)
 
-    #print(qf1_loss_array)
-    #print(qf2_loss_array)
-    #print(policy_loss_array)
-    #print(alpha_loss_array)
+    # print(qf1_loss_array)
+    # print(qf2_loss_array)
+    # print(policy_loss_array)
+    # print(alpha_loss_array)
+    score = str(avg_scores_array[-1])[:7]
+    save_score_plot(scores_array, avg_scores_array, std_scores_array, score)
 
-    save_score_plot(scores_array, avg_scores_array, std_scores_array, "final_score")
-
-    with open(join(ROOT, 'train_result', 'scores_array.pkl'), 'wb') as f1:
+    with open(join(ROOT, 'train_result', score + '_scores_array.pkl'), 'wb') as f1:
         pickle.dump(scores_array, f1)
 
-    with open(join(ROOT, 'train_result', 'avg_scores_array.pkl'), 'wb') as f2:
+    with open(join(ROOT, 'train_result', score + '_avg_scores_array.pkl'), 'wb') as f2:
         pickle.dump(avg_scores_array, f2)
 
-    save_loss_plot(qf1_loss_array, 'qf1_loss')
-    save_loss_plot(qf2_loss_array, 'qf2_loss')
-    save_loss_plot(policy_loss_array, 'policy_loss')
-    save_loss_plot(alpha_loss_array, 'alpha_loss')
+    save_loss_plot(loss_start_ep, qf1_loss_array, 'qf1_loss', score)
+    save_loss_plot(loss_start_ep, qf2_loss_array, 'qf2_loss', score)
+    save_loss_plot(loss_start_ep, policy_loss_array, 'policy_loss', score)
+    save_loss_plot(loss_start_ep, alpha_loss_array, 'alpha_loss', score)
+
+    with open(join(ROOT, 'train_result', score + '_qf1_loss_array.pkl'), 'wb') as f3:
+        pickle.dump(qf1_loss_array, f3)
+
+    with open(join(ROOT, 'train_result', score + '_qf2_loss_array.pkl'), 'wb') as f4:
+        pickle.dump(qf2_loss_array, f4)
+
+    with open(join(ROOT, 'train_result', score + '_policy_loss_array.pkl'), 'wb') as f5:
+        pickle.dump(policy_loss_array, f5)
+
+    with open(join(ROOT, 'train_result', score + '_alpha_loss_array.pkl'), 'wb') as f6:
+        pickle.dump(alpha_loss_array, f6)
 
     # ## load
-    # with open(join(ROOT, 'train_result', 'scores_array.pkl'), 'rb') as f1:
+    # with open(join(ROOT, 'train_result', score + '_scores_array.pkl'), 'rb') as f1:
     #     scores_array = pickle.load(f1)
     # 
-    # with open(join(ROOT, 'train_result', 'avg_scores_array.pkl'), 'rb') as f2:
+    # with open(join(ROOT, 'train_result', score + '_avg_scores_array.pkl'), 'rb') as f2:
     #     avg_scores_array = pickle.load(f2)
