@@ -57,6 +57,26 @@ def save_score_plot(scores, avg_scores, std_scores, name):
     if name is not None:
         path = join(ROOT, 'train_result', 'score_' + str(avg_scores[-1])[:7]+'.png')
         plt.savefig(path)
+
+    plt.clf()
+
+
+def save_loss_plot(losses, name):
+    #import matplotlib.pyplot as plt
+
+    #print('length of losses: ', len(losses))
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    plt.plot(np.arange(1, len(losses)+1), losses, label= name)
+    #plt.plot(np.arange(1, len(avg_scores)+1), avg_scores, label="Avg on 100 episodes")
+    plt.legend(bbox_to_anchor=(1.05, 1)) 
+    plt.ylabel('Loss')
+    plt.xlabel('Episodes #')
+    
+    path = join(ROOT, 'train_result', name + '.png')
+    plt.savefig(path)
+
     plt.clf()
 
 
@@ -80,8 +100,9 @@ def train(env, agent: Agent, max_episodes: int, threshold: int, max_steps: int, 
     scores_array = []
     avg_scores_array = [] 
     std_scores_array = []
-    q1_loss_array = []
-    q2_loss_array = []
+
+    qf1_loss_array = []
+    qf2_loss_array = []
     policy_loss_array = []
     alpha_loss_array = []
 
@@ -97,10 +118,10 @@ def train(env, agent: Agent, max_episodes: int, threshold: int, max_steps: int, 
         episode_steps = 0
         done = False
 
-        episode_qf1_loss = 0
-        episode_qf2_loss = 0
-        episode_policy_loss = 0
-        episode_alpha_loss = 0
+        qf1_loss = 0
+        qf2_loss = 0
+        policy_loss = 0
+        alpha_loss = 0
 
         state = env.reset()
 
@@ -114,10 +135,10 @@ def train(env, agent: Agent, max_episodes: int, threshold: int, max_steps: int, 
                 # Update parameters of all the networks
                 qf1_loss, qf2_loss, policy_loss, alpha_loss = agent.update_parameters(memory, batch_size, updates)
 
-                episode_qf1_loss += qf1_loss
-                episode_qf2_loss += qf2_loss
-                episode_policy_loss += policy_loss
-                episode_alpha_loss += alpha_loss
+                qf1_loss = qf1_loss
+                qf2_loss = qf2_loss
+                policy_loss = policy_loss
+                alpha_loss = alpha_loss
 
                 updates += 1
 
@@ -135,7 +156,19 @@ def train(env, agent: Agent, max_episodes: int, threshold: int, max_steps: int, 
             if done:
                 break
 
-        print(qf1_loss, qf2_loss, policy_loss, alpha_loss)
+        #print("loss:", qf1_loss, qf2_loss, policy_loss, alpha_loss)
+
+        if qf1_loss != 0:
+            qf1_loss_array.append(qf1_loss)
+
+        if qf2_loss != 0:
+            qf2_loss_array.append(qf2_loss)
+
+        if policy_loss != 0:
+            policy_loss_array.append(policy_loss)
+
+        if alpha_loss != 0:
+            alpha_loss_array.append(alpha_loss)
 
         scores_deque.append(episode_reward)
         scores_array.append(episode_reward)        
@@ -163,7 +196,8 @@ def train(env, agent: Agent, max_episodes: int, threshold: int, max_steps: int, 
             save(agent, 'final', avg_score)
             break
             
-    return np.array(scores_array), np.array(avg_scores_array), np.array(std_scores_array)
+    return np.array(scores_array), np.array(avg_scores_array), np.array(std_scores_array), \
+        np.array(qf1_loss_array), np.array(qf2_loss_array), np.array(policy_loss_array), np.array(alpha_loss_array)
 
 
 if __name__ == '__main__':
@@ -180,8 +214,13 @@ if __name__ == '__main__':
     env.seed(seed)
     max_steps = env._max_episode_steps # 1000
 
-    scores_array, avg_scores_array, std_scores_array = train(
-        env=env, agent=Agent(), max_episodes=30, threshold=800, max_steps=max_steps, seed=seed)
+    scores_array, avg_scores_array, std_scores_array, qf1_loss_array, qf2_loss_array, policy_loss_array, alpha_loss_array = train(
+        env=env, agent=Agent(), max_episodes=1000, threshold=2500, max_steps=max_steps, seed=seed)
+
+    #print(qf1_loss_array)
+    #print(qf2_loss_array)
+    #print(policy_loss_array)
+    #print(alpha_loss_array)
 
     save_score_plot(scores_array, avg_scores_array, std_scores_array, "final_score")
 
@@ -190,6 +229,11 @@ if __name__ == '__main__':
 
     with open(join(ROOT, 'train_result', 'avg_scores_array.pkl'), 'wb') as f2:
         pickle.dump(avg_scores_array, f2)
+
+    save_loss_plot(qf1_loss_array, 'qf1_loss')
+    save_loss_plot(qf2_loss_array, 'qf2_loss')
+    save_loss_plot(policy_loss_array, 'policy_loss')
+    save_loss_plot(alpha_loss_array, 'alpha_loss')
 
     # ## load
     # with open(join(ROOT, 'train_result', 'scores_array.pkl'), 'rb') as f1:
