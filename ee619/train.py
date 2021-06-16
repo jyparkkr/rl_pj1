@@ -28,16 +28,22 @@ def save(agent, episode, reward):
         reward: Reward on current training step.
     """
     policy_path = f"weights_policy_ep_{episode:^05}_rw_{reward:5.2f}.pth"
-    critic_path = f"weights_critic_ep_{episode:^05}_rw_{reward:5.2f}.pth"
+    critic_q1_path = f"weights_critic_q{1}_ep_{episode:^05}_rw_{reward:5.2f}.pth"
+    critic_q2_path = f"weights_critic_q{2}_ep_{episode:^05}_rw_{reward:5.2f}.pth"
 
     policy = join(ROOT, 'saved_model', policy_path)
-    critic = join(ROOT, 'saved_model', critic_path)
+    critic_q1 = join(ROOT, 'saved_model', critic_q1_path)
+    critic_q2 = join(ROOT, 'saved_model', critic_q2_path)
+
     if episode == 'final':
         policy = join(ROOT, 'saved_model', 'weights_policy_final.pth')
-        critic = join(ROOT, 'saved_model', 'weights_critic_final.pth')
+        critic_q1 = join(ROOT, 'saved_model', 'weights_critic_q1_final.pth')
+        critic_q2 = join(ROOT, 'saved_model', 'weights_critic_q2_final.pth')
+
 
     torch.save(agent.policy.state_dict(), policy)
-    torch.save(agent.critic.state_dict(), critic)
+    torch.save(agent.critic_q1.state_dict(), critic_q1)
+    torch.save(agent.critic_q2.state_dict(), critic_q2)
 
 
 def save_score_plot(scores, avg_scores, std_scores, score):
@@ -94,7 +100,7 @@ def train(env, agent: Agent, max_episodes: int, threshold: int, max_steps: int, 
         max_steps: Number of maximum step for every episode.
         seed: Passed to the environment for determinism.
     """
-    import time
+    #import time
     logger.set_level(logger.DISABLED)
     total_numsteps = 0
     updates = 0
@@ -183,7 +189,7 @@ def train(env, agent: Agent, max_episodes: int, threshold: int, max_steps: int, 
             save(agent, i_ep, reward_round)
             print('Save environment in episode: ', i_ep)
 
-        import time
+        #import time
         s =  (int)(time.time() - time_start)
         time = f"{s//3600:02}:{s%3600//60:02}:{s%60:02}"
             

@@ -8,3 +8,4 @@ ee619/saved_model/weights_critic_ep*
 ee619/saved_model/weights_policy_ep*
 
 *.ipynb
+*.pyc
