@@ -29,12 +29,12 @@ class QNetwork(nn.Module):
         self.apply(weights_init_)
 
     def forward(self, state, action):
-        xu = torch.cat([state, action], 1)
+        sa = torch.cat([state, action], 1)
         
-        x1 = F.relu(self.linear1(xu))
-        x1 = F.relu(self.linear2(x1))
-        x1 = self.linear3(x1)
-        return x1
+        h1 = F.relu(self.linear1(sa))
+        h2 = F.relu(self.linear2(h1))
+        y = self.linear3(h2)
+        return y
 
 
 class GaussianPolicy(nn.Module):

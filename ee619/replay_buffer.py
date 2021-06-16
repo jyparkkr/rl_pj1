@@ -7,7 +7,6 @@ class ReplayBuffer:
         self.buffer = []
         self.position = 0
         self.seed = random.seed(seed)
-        self.seed1 = np.random.seed(seed)
 
     def push(self, state, action, reward, next_state, done):
         if len(self.buffer) < self.capacity:
@@ -18,13 +17,6 @@ class ReplayBuffer:
     def sample(self, minibatch_size):
         minibatch = random.sample(self.buffer, minibatch_size)
         state, action, reward, next_state, done = map(np.stack, zip(*minibatch))
-        ''' 
-        https://github.com/quantumiracle/SOTA-RL-Algorithms/blob/master/sac_v2_multiprocess.py
-        the * serves as unpack: sum(a,b) <=> batch=(a,b), sum(*batch) ;
-        zip: a=[1,2], b=[2,3], zip(a,b) => [(1, 2), (2, 3)] ;
-        the map serves as mapping the function on each list element: map(square, [2,3]) => [4,9] ;
-        np.stack((1,2)) => array([1, 2])
-        '''
         return state, action, reward, next_state, done
 
     def __len__(self):

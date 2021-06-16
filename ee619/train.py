@@ -100,12 +100,12 @@ def train(env, agent: Agent, max_episodes: int, threshold: int, max_steps: int, 
         max_steps: Number of maximum step for every episode.
         seed: Passed to the environment for determinism.
     """
-    #import time
     logger.set_level(logger.DISABLED)
     total_numsteps = 0
     updates = 0
     loss_start_ep = 0
 
+    import time
     time_start = time.time()
     scores_deque = deque(maxlen=100)
     ep_scores_array = []
@@ -189,7 +189,7 @@ def train(env, agent: Agent, max_episodes: int, threshold: int, max_steps: int, 
             save(agent, i_ep, reward_round)
             print('Save environment in episode: ', i_ep)
 
-        #import time
+        import time
         s =  (int)(time.time() - time_start)
         time = f"{s//3600:02}:{s%3600//60:02}:{s%60:02}"
             
