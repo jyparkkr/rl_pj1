@@ -44,10 +44,10 @@ class Agent:
         self.critic_q2_optim = Adam(self.critic_q2.parameters(), lr=lr)
 
 
-        self.critic_target_q1 = QNetwork(self.seed, self.num_inputs, self.action_space.shape[0], hidden_size).to(self.device)
-        self.critic_target_q2 = QNetwork(self.seed, self.num_inputs, self.action_space.shape[0], hidden_size).to(self.device)
-        hard_target_update(self.critic_target_q1, self.critic_q1)
-        hard_target_update(self.critic_target_q2, self.critic_q2)
+        self.critic_q1_target = QNetwork(self.seed, self.num_inputs, self.action_space.shape[0], hidden_size).to(self.device)
+        self.critic_q2_target = QNetwork(self.seed, self.num_inputs, self.action_space.shape[0], hidden_size).to(self.device)
+        hard_target_update(self.critic_q1_target, self.critic_q1)
+        hard_target_update(self.critic_q2_target, self.critic_q2)
 
         # Target Entropy = −dim(A) (e.g. , -6 for HalfCheetah-v2) as given in the paper
         self.target_entropy = -torch.prod(torch.Tensor(self.action_space.shape).to(self.device)).item()
@@ -81,8 +81,8 @@ class Agent:
 
         with torch.no_grad():
             next_state_action, next_state_log_pi, _ = self.policy.sample(next_state_batch)
-            qf1_next_target = self.critic_target_q1(next_state_batch, next_state_action)
-            qf2_next_target = self.critic_target_q1(next_state_batch, next_state_action)
+            qf1_next_target = self.critic_q1_target(next_state_batch, next_state_action)
+            qf2_next_target = self.critic_q1_target(next_state_batch, next_state_action)
             min_qf_next_target = torch.min(qf1_next_target, qf2_next_target) - self.alpha * next_state_log_pi
             next_q_value = reward_batch + mask_batch * self.gamma * (min_qf_next_target)
 

@@ -78,14 +78,14 @@ def save_loss_plot(start_ep, losses, name, score):
     fig = plt.figure()
     ax = fig.add_subplot(111)
     ax.set_xlim(left = 0, right = start_ep + len(losses))
-
     plt.plot(np.arange(start_ep, start_ep + len(losses)), losses, label= name)
-    # plt.legend(bbox_to_anchor=(1.05, 1)) 
+
+    plt.legend() 
     plt.ylabel('Loss')
     plt.xlabel('Episodes #')
-    
-    path = join(ROOT, 'train_result', score + '_' +name + '.png')
-    plt.savefig(path)
+    if score is not None:
+        path = join(ROOT, 'train_result', score + '_' +name + '.png')
+        plt.savefig(path)
 
     plt.clf()
 
@@ -196,7 +196,7 @@ def train(env, agent: Agent, max_episodes: int, threshold: int, max_steps: int, 
         print(f"Ep.: {i_ep}, Ep.Steps: {ep_steps}, Score: {ep_reward:.3f}, Avg.Score: {avg_score:.2f}, Max.Score: {max_score:.2f}, Time: {time}")
 
 
-        if (avg_score > threshold):
+        if (avg_score > threshold) or (i_ep == max_episodes - 1):
             print('Solved environment with Avg Score: ', avg_score)
             save(agent, 'final', avg_score)
             break
@@ -223,7 +223,7 @@ if __name__ == '__main__':
     env.seed(seed)
     max_steps = env._max_episode_steps # 1000
 
-    train_result = train(env=env, agent=Agent(), max_episodes=50, threshold=16, max_steps=max_steps, seed=seed)
+    train_result = train(env=env, agent=Agent(), max_episodes=15000, threshold=2500, max_steps=max_steps, seed=seed)
 
     score = str(train_result['avg_score'][-1])[:7]
 
