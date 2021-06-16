@@ -1,6 +1,5 @@
 """Train an agent on a Walker2DBullet environment."""
 from os.path import abspath, dirname, realpath, join
-import time
 from collections import deque
 
 import gym
@@ -10,10 +9,11 @@ import pybullet_envs    # noqa: F401  # pylint: disable=unused-import
 import numpy as np
 import torch
 from ee619.agent import Agent
-from ee619.replay_memory import ReplayMemory
+from ee619.replay_buffer import ReplayBuffer
 import matplotlib.pyplot as plt
 import pickle
 
+import time
 
 
 ROOT = dirname(abspath(realpath(__file__)))  # path to the ee619 directory
@@ -27,9 +27,11 @@ def save(agent, episode, reward):
         episode: Number of episode on current training step.
         reward: Reward on current training step.
     """
+    policy_path = f"weights_policy_ep_{episode:^05}_rw_{reward:5.2f}.pth"
+    critic_path = f"weights_critic_ep_{episode:^05}_rw_{reward:5.2f}.pth"
 
-    policy = join(ROOT, 'saved_model', f'weights_policy_ep_{episode:05}_rw_{reward:5.2f}.pth')
-    critic = join(ROOT, 'saved_model', f'weights_critic_ep_{episode:05}_rw_{reward:5.2f}.pth')
+    policy = join(ROOT, 'saved_model', policy_path)
+    critic = join(ROOT, 'saved_model', critic_path)
     if episode == 'final':
         policy = join(ROOT, 'saved_model', 'weights_policy_final.pth')
         critic = join(ROOT, 'saved_model', 'weights_critic_final.pth')
@@ -92,6 +94,7 @@ def train(env, agent: Agent, max_episodes: int, threshold: int, max_steps: int, 
         max_steps: Number of maximum step for every episode.
         seed: Passed to the environment for determinism.
     """
+    import time
     logger.set_level(logger.DISABLED)
     total_numsteps = 0
     updates = 0
@@ -99,7 +102,7 @@ def train(env, agent: Agent, max_episodes: int, threshold: int, max_steps: int, 
 
     time_start = time.time()
     scores_deque = deque(maxlen=100)
-    scores_array = []
+    ep_scores_array = []
     avg_scores_array = [] 
     std_scores_array = []
 
@@ -108,16 +111,16 @@ def train(env, agent: Agent, max_episodes: int, threshold: int, max_steps: int, 
     policy_loss_array = []
     alpha_loss_array = []
 
-    batch_size=256 ## Training batch size
-    start_steps=10000 ## Steps sampling random actions
-    replay_size=1000000 ## size of replay buffer
-    memory = ReplayMemory(seed, replay_size)
+    # Hyperparameter sizes are on Appendix D
+    minibatch_size = 256 ## Training batch size
+    start_steps = 10000 ## Steps sampling random actions
+    replay_size = 100000 ## size of replay buffer
+    buffer = ReplayBuffer(seed, replay_size)
 
 
-    
-    for i_episode in range(max_episodes): 
-        episode_reward = 0
-        episode_steps = 0
+    for i_ep in range(max_episodes): 
+        ep_reward = 0
+        ep_steps = 0
         done = False
 
         qf1_loss = 0
@@ -133,9 +136,9 @@ def train(env, agent: Agent, max_episodes: int, threshold: int, max_steps: int, 
             else:
                 action = agent.select_action(state)  # Sample action from policy
 
-            if len(memory) > batch_size:                
+            if len(buffer) > minibatch_size:                
                 # Update parameters of all the networks
-                qf1_loss, qf2_loss, policy_loss, alpha_loss = agent.update_parameters(memory, batch_size, updates)
+                qf1_loss, qf2_loss, policy_loss, alpha_loss = agent.update_parameters(buffer, minibatch_size)
 
                 qf1_loss = qf1_loss
                 qf2_loss = qf2_loss
@@ -145,20 +148,18 @@ def train(env, agent: Agent, max_episodes: int, threshold: int, max_steps: int, 
                 updates += 1
 
             next_state, reward, done, _ = env.step(action) # Step
-            episode_steps += 1
+            ep_steps += 1
             total_numsteps += 1
-            episode_reward += reward
+            ep_reward += reward
 
-            mask = 1 if episode_steps == env._max_episode_steps else float(not done)
+            mask = 1 if ep_steps == env._max_episode_steps else float(not done)
 
-            memory.push(state, action, reward, next_state, mask) # Append transition to memory
+            buffer.push(state, action, reward, next_state, mask) # Append transition to buffer
 
             state = next_state
             
             if done:
                 break
-
-        #print("loss:", qf1_loss, qf2_loss, policy_loss, alpha_loss)
 
         if updates > 0:
             qf1_loss_array.append(qf1_loss)
@@ -169,33 +170,32 @@ def train(env, agent: Agent, max_episodes: int, threshold: int, max_steps: int, 
         else:
             loss_start_ep += 1
 
-        scores_deque.append(episode_reward)
-        scores_array.append(episode_reward)        
+        scores_deque.append(ep_reward)
+        ep_scores_array.append(ep_reward)        
         avg_score = np.mean(scores_deque)
         std_score = np.std(scores_deque)
         avg_scores_array.append(avg_score)
         std_scores_array.append(std_score)
         max_score = np.max(scores_deque)
         
-        if i_episode % 100 == 0 and i_episode > 0:
-            reward_round = round(episode_reward, 2)
-            save(agent, i_episode, reward_round)
-            print('Save environment in episode:  ', i_episode)
+        if i_ep % 100 == 0 and i_ep > 0:
+            reward_round = round(ep_reward, 2)
+            save(agent, i_ep, reward_round)
+            print('Save environment in episode: ', i_ep)
 
-
+        import time
         s =  (int)(time.time() - time_start)
+        time = f"{s//3600:02}:{s%3600//60:02}:{s%60:02}"
             
-        print("Ep.: {}, Total Steps: {}, Ep.Steps: {}, Score: {:.3f}, Avg.Score: {:.3f}, Max.Score: {:.3f}, Time: {:02}:{:02}:{:02}".\
-            format(i_episode, total_numsteps, episode_steps, episode_reward, avg_score, max_score, \
-                  s//3600, s%3600//60, s%60))
+        print(f"Ep.: {i_ep}, Ep.Steps: {ep_steps}, Score: {ep_reward:.3f}, Avg.Score: {avg_score:.2f}, Max.Score: {max_score:.2f}, Time: {time}")
 
-                    
+
         if (avg_score > threshold):
-            print('Solved environment with Avg Score:  ', avg_score)
+            print('Solved environment with Avg Score: ', avg_score)
             save(agent, 'final', avg_score)
             break
             
-    return np.array(scores_array), np.array(avg_scores_array), np.array(std_scores_array), \
+    return np.array(ep_scores_array), np.array(avg_scores_array), np.array(std_scores_array), \
         np.array(qf1_loss_array), np.array(qf2_loss_array), np.array(policy_loss_array), np.array(alpha_loss_array), loss_start_ep
 
 
@@ -213,18 +213,18 @@ if __name__ == '__main__':
     env.seed(seed)
     max_steps = env._max_episode_steps # 1000
 
-    scores_array, avg_scores_array, std_scores_array, qf1_loss_array, qf2_loss_array, policy_loss_array, alpha_loss_array, loss_start_ep = train(
-        env=env, agent=Agent(), max_episodes=50, threshold=2500, max_steps=max_steps, seed=seed)
+    ep_scores_array, avg_scores_array, std_scores_array, qf1_loss_array, qf2_loss_array, policy_loss_array, alpha_loss_array, loss_start_ep = train(
+        env=env, agent=Agent(), max_episodes=50, threshold=16, max_steps=max_steps, seed=seed)
 
     # print(qf1_loss_array)
     # print(qf2_loss_array)
     # print(policy_loss_array)
     # print(alpha_loss_array)
     score = str(avg_scores_array[-1])[:7]
-    save_score_plot(scores_array, avg_scores_array, std_scores_array, score)
+    save_score_plot(ep_scores_array, avg_scores_array, std_scores_array, score)
 
-    with open(join(ROOT, 'train_result', score + '_scores_array.pkl'), 'wb') as f1:
-        pickle.dump(scores_array, f1)
+    with open(join(ROOT, 'train_result', score + '_ep_scores_array.pkl'), 'wb') as f1:
+        pickle.dump(ep_scores_array, f1)
 
     with open(join(ROOT, 'train_result', score + '_avg_scores_array.pkl'), 'wb') as f2:
         pickle.dump(avg_scores_array, f2)
@@ -247,8 +247,8 @@ if __name__ == '__main__':
         pickle.dump(alpha_loss_array, f6)
 
     # ## load
-    # with open(join(ROOT, 'train_result', score + '_scores_array.pkl'), 'rb') as f1:
-    #     scores_array = pickle.load(f1)
+    # with open(join(ROOT, 'train_result', score + '_ep_scores_array.pkl'), 'rb') as f1:
+    #     ep_scores_array = pickle.load(f1)
     # 
     # with open(join(ROOT, 'train_result', score + '_avg_scores_array.pkl'), 'rb') as f2:
     #     avg_scores_array = pickle.load(f2)

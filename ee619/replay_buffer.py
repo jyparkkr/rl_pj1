@@ -1,7 +1,7 @@
 import random
 import numpy as np
 
-class ReplayMemory:
+class ReplayBuffer:
     def __init__(self, seed, capacity):
         self.capacity = capacity
         self.buffer = []
@@ -15,9 +15,9 @@ class ReplayMemory:
         self.buffer[self.position] = (state, action, reward, next_state, done)
         self.position = (self.position + 1) % self.capacity
 
-    def sample(self, batch_size):
-        batch = random.sample(self.buffer, batch_size)
-        state, action, reward, next_state, done = map(np.stack, zip(*batch))
+    def sample(self, minibatch_size):
+        minibatch = random.sample(self.buffer, minibatch_size)
+        state, action, reward, next_state, done = map(np.stack, zip(*minibatch))
         ''' 
         https://github.com/quantumiracle/SOTA-RL-Algorithms/blob/master/sac_v2_multiprocess.py
         the * serves as unpack: sum(a,b) <=> batch=(a,b), sum(*batch) ;
