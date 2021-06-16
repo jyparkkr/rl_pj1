@@ -19,8 +19,6 @@ class QNetwork(nn.Module):
 
         torch.manual_seed(seed)
         torch.cuda.manual_seed(seed)
-        #torch.cuda.manual_seed_all(seed)
-        #torch.backends.cudnn.deterministic=True
 
         self.linear1 = nn.Linear(num_inputs + num_actions, hidden_dim)
         self.linear2 = nn.Linear(hidden_dim, hidden_dim)
