@@ -82,7 +82,7 @@ class Agent:
         with torch.no_grad():
             next_state_action, next_state_log_pi, _ = self.policy.sample(next_state_batch)
             qf1_next_target = self.critic_q1_target(next_state_batch, next_state_action)
-            qf2_next_target = self.critic_q1_target(next_state_batch, next_state_action)
+            qf2_next_target = self.critic_q2_target(next_state_batch, next_state_action)
             min_qf_next_target = torch.min(qf1_next_target, qf2_next_target) - self.alpha * next_state_log_pi
             next_q_value = reward_batch + mask_batch * self.gamma * (min_qf_next_target)
 
