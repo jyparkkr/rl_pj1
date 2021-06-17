@@ -27,9 +27,9 @@ def save(agent, episode, reward):
         episode: Number of episode on current training step.
         reward: Reward on current training step.
     """
-    policy_path = f"weights_policy_ep_{episode:^05}_rw_{reward:5.2f}.pth"
-    critic_q1_path = f"weights_critic_q{1}_ep_{episode:^05}_rw_{reward:5.2f}.pth"
-    critic_q2_path = f"weights_critic_q{2}_ep_{episode:^05}_rw_{reward:5.2f}.pth"
+    policy_path = f"weights_policy_ep_{episode:^5}_rw_{reward:5.2f}.pth"
+    critic_q1_path = f"weights_critic_q{1}_ep_{episode:^5}_rw_{reward:5.2f}.pth"
+    critic_q2_path = f"weights_critic_q{2}_ep_{episode:^5}_rw_{reward:5.2f}.pth"
 
     policy = join(ROOT, 'saved_model', policy_path)
     critic_q1 = join(ROOT, 'saved_model', critic_q1_path)
@@ -185,8 +185,7 @@ def train(env, agent: Agent, max_episodes: int, threshold: int, max_steps: int, 
         max_score = np.max(scores_deque)
         
         if i_ep % 100 == 0 and i_ep > 0:
-            reward_round = round(ep_reward, 2)
-            save(agent, i_ep, reward_round)
+            save(agent, i_ep, avg_score)
             print('Save environment in episode: ', i_ep)
 
         import time
@@ -223,7 +222,7 @@ if __name__ == '__main__':
     env.seed(seed)
     max_steps = env._max_episode_steps # 1000
 
-    train_result = train(env=env, agent=Agent(), max_episodes=15000, threshold=2500, max_steps=max_steps, seed=seed)
+    train_result = train(env=env, agent=Agent(), max_episodes=150, threshold=2500, max_steps=max_steps, seed=seed)
 
     score = str(train_result['avg_score'][-1])[:7]
 
