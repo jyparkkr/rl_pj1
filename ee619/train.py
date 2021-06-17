@@ -27,9 +27,9 @@ def save(agent, episode, reward):
         episode: Number of episode on current training step.
         reward: Reward on current training step.
     """
-    policy_path = f"weights_policy_ep_{episode:^5}_rw_{reward:5.2f}.pth"
-    critic_q1_path = f"weights_critic_q{1}_ep_{episode:^5}_rw_{reward:5.2f}.pth"
-    critic_q2_path = f"weights_critic_q{2}_ep_{episode:^5}_rw_{reward:5.2f}.pth"
+    policy_path = f"weights_policy_ep_{episode:>05}_rw_{reward:5.2f}.pth"
+    critic_q1_path = f"weights_critic_q{1}_ep_{episode:>05}_rw_{reward:5.2f}.pth"
+    critic_q2_path = f"weights_critic_q{2}_ep_{episode:>05}_rw_{reward:5.2f}.pth"
 
     policy = join(ROOT, 'saved_model', policy_path)
     critic_q1 = join(ROOT, 'saved_model', critic_q1_path)
