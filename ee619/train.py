@@ -28,8 +28,8 @@ def save(agent, episode, reward):
         reward: Reward on current training step.
     """
 
-    policy = join(ROOT, 'saved_model', f'weights_policy_ep_{episode:05}_rw_{reward:5.2f}.pth')
-    critic = join(ROOT, 'saved_model', f'weights_critic_ep_{episode:05}_rw_{reward:5.2f}.pth')
+    policy = join(ROOT, 'saved_model', f'weights_policy_ep_{episode:>05}_rw_{reward:5.2f}.pth')
+    critic = join(ROOT, 'saved_model', f'weights_critic_ep_{episode:>05}_rw_{reward:5.2f}.pth')
     if episode == 'final':
         policy = join(ROOT, 'saved_model', 'weights_policy_final.pth')
         critic = join(ROOT, 'saved_model', 'weights_critic_final.pth')
@@ -41,6 +41,7 @@ def save(agent, episode, reward):
 def save_score_plot(scores, avg_scores, std_scores, name):
     fig = plt.figure()
     ax = fig.add_subplot(111)
+    ax.set_xlim(left = 0, right = len(scores))
     plt.plot(np.arange(1, len(scores)+1), scores, label="Score")
     plt.plot(np.arange(1, len(avg_scores)+1), avg_scores, label="Avg on 100 episodes")
     plt.fill_between(
@@ -61,16 +62,16 @@ def save_score_plot(scores, avg_scores, std_scores, name):
     plt.clf()
 
 
-def save_loss_plot(losses, name):
+def save_loss_plot(start_ep, losses, name):
     #import matplotlib.pyplot as plt
 
     #print('length of losses: ', len(losses))
 
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    plt.plot(np.arange(1, len(losses)+1), losses, label= name)
-    #plt.plot(np.arange(1, len(avg_scores)+1), avg_scores, label="Avg on 100 episodes")
-    plt.legend(bbox_to_anchor=(1.05, 1)) 
+    ax.set_xlim(left = 0, right = start_ep + len(losses))
+    plt.plot(np.arange(start_ep, start_ep + len(losses)), losses, label= name)
+    plt.legend() 
     plt.ylabel('Loss')
     plt.xlabel('Episodes #')
     
@@ -111,7 +112,7 @@ def train(env, agent: Agent, max_episodes: int, threshold: int, max_steps: int, 
     replay_size=1000000 ## size of replay buffer
     memory = ReplayMemory(seed, replay_size)
 
-
+    start_ep = 0
     
     for i_episode in range(max_episodes): 
         episode_reward = 0
@@ -157,6 +158,8 @@ def train(env, agent: Agent, max_episodes: int, threshold: int, max_steps: int, 
                 break
 
         #print("loss:", qf1_loss, qf2_loss, policy_loss, alpha_loss)
+        if updates == 0:
+            start_ep += 1
 
         if qf1_loss != 0:
             qf1_loss_array.append(qf1_loss)
@@ -196,7 +199,7 @@ def train(env, agent: Agent, max_episodes: int, threshold: int, max_steps: int, 
             save(agent, 'final', avg_score)
             break
             
-    return np.array(scores_array), np.array(avg_scores_array), np.array(std_scores_array), \
+    return start_ep, np.array(scores_array), np.array(avg_scores_array), np.array(std_scores_array), \
         np.array(qf1_loss_array), np.array(qf2_loss_array), np.array(policy_loss_array), np.array(alpha_loss_array)
 
 
@@ -214,8 +217,8 @@ if __name__ == '__main__':
     env.seed(seed)
     max_steps = env._max_episode_steps # 1000
 
-    scores_array, avg_scores_array, std_scores_array, qf1_loss_array, qf2_loss_array, policy_loss_array, alpha_loss_array = train(
-        env=env, agent=Agent(), max_episodes=1000, threshold=2500, max_steps=max_steps, seed=seed)
+    start_ep, scores_array, avg_scores_array, std_scores_array, qf1_loss_array, qf2_loss_array, policy_loss_array, alpha_loss_array = train(
+        env=env, agent=Agent(), max_episodes=20000, threshold=2500, max_steps=max_steps, seed=seed)
 
     #print(qf1_loss_array)
     #print(qf2_loss_array)
@@ -230,10 +233,24 @@ if __name__ == '__main__':
     with open(join(ROOT, 'train_result', 'avg_scores_array.pkl'), 'wb') as f2:
         pickle.dump(avg_scores_array, f2)
 
-    save_loss_plot(qf1_loss_array, 'qf1_loss')
-    save_loss_plot(qf2_loss_array, 'qf2_loss')
-    save_loss_plot(policy_loss_array, 'policy_loss')
-    save_loss_plot(alpha_loss_array, 'alpha_loss')
+    save_loss_plot(start_ep, qf1_loss_array, 'qf1_loss')
+    save_loss_plot(start_ep, qf2_loss_array, 'qf2_loss')
+    save_loss_plot(start_ep, policy_loss_array, 'policy_loss')
+    save_loss_plot(start_ep, alpha_loss_array, 'alpha_loss')
+
+    with open(join(ROOT, 'train_result', 'qf1_loss_array.pkl'), 'wb') as f1:
+        pickle.dump(qf1_loss_array, f1)
+
+    with open(join(ROOT, 'train_result', 'qf2_loss_array.pkl'), 'wb') as f1:
+        pickle.dump(qf2_loss_array, f1)
+
+    with open(join(ROOT, 'train_result', 'policy_loss_array.pkl'), 'wb') as f1:
+        pickle.dump(policy_loss_array, f1)
+
+    with open(join(ROOT, 'train_result', 'alpha_loss_array.pkl'), 'wb') as f1:
+        pickle.dump(alpha_loss_array, f1)
+
+
 
     # ## load
     # with open(join(ROOT, 'train_result', 'scores_array.pkl'), 'rb') as f1:
