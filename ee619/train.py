@@ -222,7 +222,7 @@ if __name__ == '__main__':
     env.seed(seed)
     max_steps = env._max_episode_steps # 1000
 
-    train_result = train(env=env, agent=Agent(), max_episodes=150, threshold=2500, max_steps=max_steps, seed=seed)
+    train_result = train(env=env, agent=Agent(), max_episodes=20000, threshold=2500, max_steps=max_steps, seed=seed)
 
     score = str(train_result['avg_score'][-1])[:7]
 
