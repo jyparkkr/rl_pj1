@@ -120,7 +120,7 @@ def train(env, agent: Agent, max_episodes: int, threshold: int, max_steps: int, 
     # Hyperparameter sizes are on Appendix D
     minibatch_size = 256 ## Training batch size
     start_steps = 10000 ## Steps sampling random actions
-    replay_size = 100000 ## size of replay buffer
+    replay_size = 1000000 ## size of replay buffer
     buffer = ReplayBuffer(seed, replay_size)
 
 
