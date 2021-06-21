@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from torch.optim import Adam
-from ee619.model import GaussianPolicy, QNetwork
+from ee619.model import GaussianPolicy, QNetwork, QNetwork_T
 
 
 ROOT = dirname(abspath(realpath(__file__)))  # path to the ee619 directory
@@ -56,6 +56,15 @@ class Agent:
         self.policy = GaussianPolicy(self.seed, self.num_inputs, self.action_space.shape[0], \
                                          self.num_inputs, self.action_space).to(self.device)
         self.policy_optim = Adam(self.policy.parameters(), lr=lr)
+
+        self.critic = QNetwork_T(self.seed, self.num_inputs, self.action_space.shape[0], hidden_size).to(self.device)
+        self.critic_optim = Adam(self.critic_q1.parameters(), lr=lr)
+        self.critic_target = QNetwork_T(self.seed, self.num_inputs, self.action_space.shape[0], hidden_size).to(self.device)
+
+
+    def model_transfer():
+        return
+
 
     def act(self, observation: np.ndarray):
         """Decides which action to take for the given observation."""
@@ -138,10 +147,39 @@ class Agent:
             path = join(ROOT, 'model.pth')
             self.policy.load_state_dict(torch.load(path))
         """
+        # policy = join(ROOT, 'saved_model', 'weights_policy_final.pth')
+        # critic_q1 = join(ROOT, 'saved_model', 'weights_critic_q1_final.pth')
+        # critic_q2 = join(ROOT, 'saved_model', 'weights_critic_q2_final.pth')
+
+        # self.policy.load_state_dict(torch.load(policy, map_location=self.device))
+        # self.critic_q1.load_state_dict(torch.load(critic_q1, map_location=self.device))
+        # self.critic_q2.load_state_dict(torch.load(critic_q2, map_location=self.device))
+        
+    def load(self):
+        """Loads network parameters if there are any.
+        Example:
+            path = join(ROOT, 'model.pth')
+            self.policy.load_state_dict(torch.load(path))
+        """
         policy = join(ROOT, 'saved_model', 'weights_policy_final.pth')
-        critic_q1 = join(ROOT, 'saved_model', 'weights_critic_q1_final.pth')
-        critic_q2 = join(ROOT, 'saved_model', 'weights_critic_q2_final.pth')
+        critic = join(ROOT, 'saved_model', 'weights_critic_final.pth')
 
         self.policy.load_state_dict(torch.load(policy, map_location=self.device))
-        self.critic_q1.load_state_dict(torch.load(critic_q1, map_location=self.device))
-        self.critic_q2.load_state_dict(torch.load(critic_q2, map_location=self.device))
+        self.critic.load_state_dict(torch.load(critic, map_location=self.device))
+
+    def save(self):
+        """Save state of agent.
+
+        Args:
+            agent: The agent on train.
+            episode: Number of episode on current training step.
+            reward: Reward on current training step.
+        """
+        policy = join(ROOT, 'saved_model_new', 'weights_policy_final.pth')
+        critic_q1 = join(ROOT, 'saved_model_new', 'weights_critic_q1_final.pth')
+        critic_q2 = join(ROOT, 'saved_model_new', 'weights_critic_q2_final.pth')
+
+
+        torch.save(self.policy.state_dict(), policy)
+        torch.save(self.critic_q1.state_dict(), critic_q1)
+        torch.save(self.critic_q2.state_dict(), critic_q2)
