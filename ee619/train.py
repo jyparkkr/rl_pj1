@@ -4,7 +4,8 @@ from collections import deque
 
 import gym
 from gym import logger
-import pybullet_envs
+# pybullet_envs must be imported in order to create Walker2DBulletEnv
+import pybullet_envs    # noqa: F401  # pylint: disable=unused-import
 import numpy as np
 import torch
 from ee619.agent import Agent

@@ -31,7 +31,7 @@ class Agent:
         torch.cuda.manual_seed(self.seed)
         self.action_space = Box(-1, 1, (6,))
         self.action_space.seed(self.seed)
-        self.num_inputs = 22
+        self.num_inputs = 22 # dimension of observation_space state
 
         self.gamma = gamma
         self.tau = tau
