@@ -11,15 +11,6 @@ from ee619.model import GaussianPolicy, QNetwork
 
 ROOT = dirname(abspath(realpath(__file__)))  # path to the ee619 directory
 
-#def soft_target_update(target, source, tau):
-#    """Partial update(for each gradient step) of model (inplace operation)"""
-#    for target_param, param in zip(target.parameters(), source.parameters()):
-#        target_param.data.copy_(target_param.data * (1.0 - tau) + param.data * tau)
-
-#def hard_target_update(target, source):
-#    """Copy source model to target model (inplace operation)"""
-#    for target_param, param in zip(target.parameters(), source.parameters()):
-#        target_param.data.copy_(param.data)
 
 
 class Agent:
@@ -46,8 +37,6 @@ class Agent:
 
         self.critic_q1_target = QNetwork(self.seed, self.num_inputs, self.action_space.shape[0], hidden_size).to(self.device)
         self.critic_q2_target = QNetwork(self.seed, self.num_inputs, self.action_space.shape[0], hidden_size).to(self.device)
-        #hard_target_update(self.critic_q1_target, self.critic_q1)
-        #hard_target_update(self.critic_q2_target, self.critic_q2)
 
         for target_param, param in zip(self.critic_q1_target.parameters(), self.critic_q1.parameters()):
             target_param.data.copy_(param.data)
@@ -129,11 +118,9 @@ class Agent:
 
         self.alpha = self.log_alpha.exp()
         
-        #soft_target_update(self.critic_q1_target, self.critic_q1, self.tau)
         for target_param, param in zip(self.critic_q1_target.parameters(), self.critic_q1.parameters()):
             target_param.data.copy_(target_param.data * (1.0 - self.tau) + param.data * self.tau)
 
-        #soft_target_update(self.critic_q2_target, self.critic_q2, self.tau)
         for target_param, param in zip(self.critic_q2_target.parameters(), self.critic_q2.parameters()):
             target_param.data.copy_(target_param.data * (1.0 - self.tau) + param.data * self.tau)
 
