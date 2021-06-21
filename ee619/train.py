@@ -71,9 +71,6 @@ def save_score_plot(ep_score, avg_score, std_score, score):
 
 
 def save_loss_plot(start_ep, losses, name, score):
-    #import matplotlib.pyplot as plt
-
-    #print('length of losses: ', len(losses))
 
     fig = plt.figure()
     ax = fig.add_subplot(111)
@@ -235,11 +232,3 @@ if __name__ == '__main__':
         save_loss_plot(train_result['loss_start_ep'], train_result[result], result, score)
         with open(join(ROOT, 'train_result', score + f'_{result}.pkl'), 'wb') as f:
             pickle.dump(train_result[result], f)
-
-
-    # ## load
-    # with open(join(ROOT, 'train_result', score + '_ep_score_array.pkl'), 'rb') as f1:
-    #     ep_score_array = pickle.load(f1)
-    # 
-    # with open(join(ROOT, 'train_result', score + '_avg_score_array.pkl'), 'rb') as f2:
-    #     avg_score_array = pickle.load(f2)

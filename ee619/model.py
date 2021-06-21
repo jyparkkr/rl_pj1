@@ -8,7 +8,7 @@ LOG_SIG_MIN = -20
 EPS = 1e-6
 
 # Initialize Policy weights
-def weights_init_(m):
+def init_weights_(m):
     if isinstance(m, nn.Linear):
         torch.nn.init.xavier_uniform_(m.weight, gain=1)
         torch.nn.init.constant_(m.bias, 0)
@@ -24,7 +24,7 @@ class QNetwork(nn.Module):
         self.linear2 = nn.Linear(hidden_dim, hidden_dim)
         self.linear3 = nn.Linear(hidden_dim, 1)
 
-        self.apply(weights_init_)
+        self.apply(init_weights_)
 
     def forward(self, state, action):
         sa = torch.cat([state, action], 1)
@@ -48,7 +48,7 @@ class GaussianPolicy(nn.Module):
         self.mean_linear = nn.Linear(hidden_dim, num_actions)
         self.log_std_linear = nn.Linear(hidden_dim, num_actions)
 
-        self.apply(weights_init_)
+        self.apply(init_weights_)
 
         # action rescaling
         if action_space is None:
@@ -72,7 +72,7 @@ class GaussianPolicy(nn.Module):
         mean, log_std = self.forward(state)
         std = log_std.exp()
         normal = Normal(mean, std)
-        x_t = normal.rsample()  # for reparameterization trick (mean + std * N(0,1))
+        x_t = normal.rsample()
         y_t = torch.tanh(x_t)
         action = y_t * self.action_scale + self.action_bias
         log_prob = normal.log_prob(x_t)
